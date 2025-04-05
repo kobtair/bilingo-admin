@@ -12,7 +12,7 @@ Bilingo Admin is the web-based administrative panel for managing the Bilingo pla
 
 ## Tech Stack
 
-- **Frontend Framework**: React (or Next.js)
+- **Frontend Framework**: Next.js
 - **Backend Integration**: Communicates with Bilingo Backend API
 
 ## Installation
