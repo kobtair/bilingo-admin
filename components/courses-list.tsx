@@ -31,7 +31,17 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import type { Course } from "@/lib/mongodb"
+import { coursesAPI } from "@/lib/api"
+
+interface Course {
+  id: string
+  title: string
+  description: string
+  language: string
+  dialect: string
+  chaptersCount: number
+  status: "Published" | "Draft" | "Archived"
+}
 
 export function CoursesList() {
   const { toast } = useToast()
@@ -46,20 +56,10 @@ export function CoursesList() {
     dialect: "",
   })
 
-  useEffect(() => {
-    fetchCourses()
-  }, [])
-
   const fetchCourses = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/courses")
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch courses")
-      }
-
-      const data = await response.json()
+      const data = await coursesAPI.getAll()
       setCourses(data)
     } catch (error) {
       console.error("Error fetching courses:", error)
@@ -73,21 +73,13 @@ export function CoursesList() {
     }
   }
 
+  useEffect(() => {
+    fetchCourses()
+  }, [])
+
   const handleAddCourse = async () => {
     try {
-      const response = await fetch("/api/courses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newCourse),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to create course")
-      }
-
-      const data = await response.json()
+      const data = await coursesAPI.create(newCourse)
       setCourses([...courses, data])
       setNewCourse({
         title: "",
@@ -113,14 +105,7 @@ export function CoursesList() {
 
   const handleDeleteCourse = async (id: string) => {
     try {
-      const response = await fetch(`/api/courses/${id}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to delete course")
-      }
-
+      await coursesAPI.delete(id)
       setCourses(courses.filter((course) => course.id !== id))
 
       toast({
@@ -146,7 +131,7 @@ export function CoursesList() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-700 to-cyan-500 hover:from-blue-800 hover:to-cyan-600">
+            <Button className="bg-gradient-to-r from-blue-700 to-cyan-500 hover:from-blue-800 hover:to-cyan-600 dark:from-blue-600 dark:to-cyan-400 dark:hover:from-blue-700 dark:hover:to-cyan-500">
               <BookPlus className="mr-2 h-4 w-4" />
               Add Course
             </Button>
@@ -249,8 +234,10 @@ export function CoursesList() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
-                          <Edit className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link href={`/dashboard/courses/${course.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -268,7 +255,7 @@ export function CoursesList() {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleDeleteCourse(course.id as string)}
+                                onClick={() => handleDeleteCourse(course.id)}
                                 className="bg-red-500 hover:bg-red-700"
                               >
                                 Delete

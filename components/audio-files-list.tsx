@@ -31,7 +31,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import type { AudioFile } from "@/lib/mongodb"
+import { audioFilesAPI } from "@/lib/api"
+
+interface AudioFile {
+  id: string
+  title: string
+  language: string
+  dialect: string
+  phraseSaid: string
+  fileName: string
+  fileUrl: string
+  duration: string
+  uploadDate: string
+}
 
 export function AudioFilesList() {
   const { toast } = useToast()
@@ -49,20 +61,10 @@ export function AudioFilesList() {
     file: null as File | null,
   })
 
-  useEffect(() => {
-    fetchAudioFiles()
-  }, [])
-
   const fetchAudioFiles = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/audio")
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch audio files")
-      }
-
-      const data = await response.json()
+      const data = await audioFilesAPI.getAll()
       setAudioFiles(data)
     } catch (error) {
       console.error("Error fetching audio files:", error)
@@ -75,6 +77,10 @@ export function AudioFilesList() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchAudioFiles()
+  }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -103,16 +109,10 @@ export function AudioFilesList() {
       formData.append("phraseSaid", newAudio.phraseSaid)
       formData.append("file", newAudio.file)
 
-      const response = await fetch("/api/audio", {
-        method: "POST",
-        body: formData,
-      })
+      // Upload to API
+      const data = await audioFilesAPI.create(formData)
 
-      if (!response.ok) {
-        throw new Error("Failed to upload audio file")
-      }
-
-      const data = await response.json()
+      // Update local state
       setAudioFiles([...audioFiles, data])
 
       // Reset form
@@ -148,14 +148,7 @@ export function AudioFilesList() {
 
   const handleDeleteAudio = async (id: string) => {
     try {
-      const response = await fetch(`/api/audio/${id}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to delete audio file")
-      }
-
+      await audioFilesAPI.delete(id)
       setAudioFiles(audioFiles.filter((audio) => audio.id !== id))
 
       toast({
@@ -186,7 +179,7 @@ export function AudioFilesList() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-700 to-cyan-500 hover:from-blue-800 hover:to-cyan-600">
+            <Button className="bg-gradient-to-r from-blue-700 to-cyan-500 hover:from-blue-800 hover:to-cyan-600 dark:from-blue-600 dark:to-cyan-400 dark:hover:from-blue-700 dark:hover:to-cyan-500">
               <Upload className="mr-2 h-4 w-4" />
               Upload Audio
             </Button>
@@ -321,7 +314,7 @@ export function AudioFilesList() {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleDeleteAudio(audio.id as string)}
+                                onClick={() => handleDeleteAudio(audio.id)}
                                 className="bg-red-500 hover:bg-red-700"
                               >
                                 Delete

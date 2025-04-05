@@ -1,46 +1,24 @@
-"use client";
+"use client"
 
-import { useParams } from "next/navigation";
-import { ChaptersList } from "@/components/chapters-list";
-import { DashboardHeader } from "@/components/dashboard-header";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-
-type Course = {
-  id: string;
-  title: string;
-  description: string;
-  language: string;
-  dialect: string;
-};
+import { useParams } from "next/navigation"
+import { ChaptersList } from "@/components/chapters-list"
+import { DashboardHeader } from "@/components/dashboard-header"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 export default function CourseDetailsPage() {
-  const params = useParams();
-  const courseId = params.courseId as string;
-  const [course, setCourse] = useState<Course | null>(null);
+  const params = useParams()
+  const courseId = params.courseId as string
 
-  const fetchCourseDetails = async (courseId: string) => {
-    try {
-      const response = await fetch(`/api/courses/${courseId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch course details");
-      }
-      const data = await response.json();
-      setCourse(data);
-    } catch (error) {
-      console.error("Error fetching course details:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (!courseId) {
-      console.error("Course ID is missing");
-      return;
-    }
-    fetchCourseDetails(courseId);
-  }, [courseId]);
+  // In a real app, you would fetch the course details based on the courseId
+  const course = {
+    id: courseId,
+    title: "Spanish for Beginners",
+    description: "Learn basic Spanish phrases and vocabulary",
+    language: "Spanish",
+    dialect: "Latin American",
+  }
 
   return (
     <div className="space-y-6">
@@ -52,13 +30,9 @@ export default function CourseDetailsPage() {
           </Link>
         </Button>
       </div>
-      {course && (
-        <DashboardHeader
-          heading={course.title}
-          text={`${course.language} (${course.dialect}) - ${course.description}`}
-        />
-      )}
+      <DashboardHeader heading={course.title} text={`${course.language} (${course.dialect}) - ${course.description}`} />
       <ChaptersList courseId={courseId} />
     </div>
-  );
+  )
 }
+

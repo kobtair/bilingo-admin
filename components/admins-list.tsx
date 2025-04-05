@@ -226,8 +226,8 @@ export function AdminsList() {
                   </TableCell>
                 </TableRow>
               ) : (
-                admins.map((admin) => (
-                  <TableRow key={admin.id}>
+                admins.map((admin, _i) => (
+                  <TableRow key={_i}>
                     <TableCell className="font-medium">{admin.name}</TableCell>
                     <TableCell>{admin.email}</TableCell>
                     <TableCell>

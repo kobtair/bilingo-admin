@@ -17,100 +17,32 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MoreHorizontal, Search, UserPlus, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import type { User } from "@/lib/mongodb"
+import { usersAPI } from "@/lib/api"
+
+interface User {
+  id: string
+  name: string
+  email: string
+  profileImage?: string
+  language: string
+  level: "Beginner" | "Intermediate" | "Advanced"
+  progress: number
+  lastActive: string
+  joinDate: string
+  status: "Active" | "Inactive" | "Suspended"
+}
 
 export function UsersList() {
   const { toast } = useToast()
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: "1",
-      name: "Sofia Rodriguez",
-      email: "sofia@example.com",
-      profileImage: "/placeholder.svg?height=40&width=40",
-      language: "Spanish",
-      level: "Intermediate",
-      progress: 68,
-      lastActive: "2023-06-15",
-      joinDate: "2023-01-10",
-      status: "Active",
-    },
-    {
-      id: "2",
-      name: "Michael Chen",
-      email: "michael@example.com",
-      profileImage: "/placeholder.svg?height=40&width=40",
-      language: "Mandarin",
-      level: "Beginner",
-      progress: 32,
-      lastActive: "2023-06-18",
-      joinDate: "2023-02-22",
-      status: "Active",
-    },
-    {
-      id: "3",
-      name: "Emma Johnson",
-      email: "emma@example.com",
-      profileImage: "/placeholder.svg?height=40&width=40",
-      language: "French",
-      level: "Advanced",
-      progress: 92,
-      lastActive: "2023-06-10",
-      joinDate: "2022-11-05",
-      status: "Active",
-    },
-    {
-      id: "4",
-      name: "Ahmed Hassan",
-      email: "ahmed@example.com",
-      profileImage: "/placeholder.svg?height=40&width=40",
-      language: "Arabic",
-      level: "Intermediate",
-      progress: 45,
-      lastActive: "2023-05-30",
-      joinDate: "2023-03-15",
-      status: "Inactive",
-    },
-    {
-      id: "5",
-      name: "Yuki Tanaka",
-      email: "yuki@example.com",
-      profileImage: "/placeholder.svg?height=40&width=40",
-      language: "Japanese",
-      level: "Beginner",
-      progress: 12,
-      lastActive: "2023-06-17",
-      joinDate: "2023-05-20",
-      status: "Active",
-    },
-    {
-      id: "6",
-      name: "Isabella Garcia",
-      email: "isabella@example.com",
-      profileImage: "/placeholder.svg?height=40&width=40",
-      language: "Italian",
-      level: "Intermediate",
-      progress: 58,
-      lastActive: "2023-06-01",
-      joinDate: "2023-02-14",
-      status: "Suspended",
-    },
-  ])
-  const [isLoading, setIsLoading] = useState(false)
+  const [users, setUsers] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
 
-  // In a real app, you would fetch users from an API
   const fetchUsers = async () => {
     try {
       setIsLoading(true)
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // In a real app, this would be:
-      // const response = await fetch('/api/users')
-      // const data = await response.json()
-      // setUsers(data)
-
-      // For now, we're using the mock data initialized above
+      const data = await usersAPI.getAll()
+      setUsers(data)
     } catch (error) {
       console.error("Error fetching users:", error)
       toast({
@@ -134,13 +66,25 @@ export function UsersList() {
       user.language.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  const handleStatusChange = (userId: string, newStatus: "Active" | "Inactive" | "Suspended") => {
-    setUsers(users.map((user) => (user.id === userId ? { ...user, status: newStatus } : user)))
+  const handleStatusChange = async (userId: string, newStatus: "Active" | "Inactive" | "Suspended") => {
+    try {
+      await usersAPI.update(userId, { status: newStatus })
 
-    toast({
-      title: "Status Updated",
-      description: `User status has been updated to ${newStatus}`,
-    })
+      // Update local state
+      setUsers(users.map((user) => (user.id === userId ? { ...user, status: newStatus } : user)))
+
+      toast({
+        title: "Status Updated",
+        description: `User status has been updated to ${newStatus}`,
+      })
+    } catch (error) {
+      console.error("Error updating user status:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update user status. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -261,13 +205,13 @@ export function UsersList() {
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleStatusChange(user.id as string, "Active")}>
+                          <DropdownMenuItem onClick={() => handleStatusChange(user.id, "Active")}>
                             Set as Active
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(user.id as string, "Inactive")}>
+                          <DropdownMenuItem onClick={() => handleStatusChange(user.id, "Inactive")}>
                             Set as Inactive
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(user.id as string, "Suspended")}>
+                          <DropdownMenuItem onClick={() => handleStatusChange(user.id, "Suspended")}>
                             Suspend User
                           </DropdownMenuItem>
                         </DropdownMenuContent>
