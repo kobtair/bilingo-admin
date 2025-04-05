@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast"
 import { usersAPI } from "@/lib/api"
 
 interface User {
-  id: string
+  _id: string
   name: string
   email: string
   profileImage?: string
@@ -71,7 +71,7 @@ export function UsersList() {
       await usersAPI.update(userId, { status: newStatus })
 
       // Update local state
-      setUsers(users.map((user) => (user.id === userId ? { ...user, status: newStatus } : user)))
+      setUsers(users.map((user) => (user._id === userId ? { ...user, status: newStatus } : user)))
 
       toast({
         title: "Status Updated",
@@ -138,7 +138,7 @@ export function UsersList() {
                 </TableRow>
               ) : (
                 filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user._id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
@@ -201,17 +201,17 @@ export function UsersList() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => (window.location.href = `/dashboard/users/${user.id}`)}>
+                          <DropdownMenuItem onClick={() => (window.location.href = `/dashboard/users/${user._id}`)}>
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleStatusChange(user.id, "Active")}>
+                          <DropdownMenuItem onClick={() => handleStatusChange(user._id, "Active")}>
                             Set as Active
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(user.id, "Inactive")}>
+                          <DropdownMenuItem onClick={() => handleStatusChange(user._id, "Inactive")}>
                             Set as Inactive
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(user.id, "Suspended")}>
+                          <DropdownMenuItem onClick={() => handleStatusChange(user._id, "Suspended")}>
                             Suspend User
                           </DropdownMenuItem>
                         </DropdownMenuContent>

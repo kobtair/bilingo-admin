@@ -63,7 +63,7 @@ export function DashboardStats() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground">+{stats.newUsersThisMonth} from last month</p>
+          {/* <p className="text-xs text-muted-foreground">+{stats.newUsersThisMonth} from last month</p> */}
         </CardContent>
       </Card>
       <Card>
@@ -73,7 +73,7 @@ export function DashboardStats() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.totalCourses}</div>
-          <p className="text-xs text-muted-foreground">+{stats.newCoursesThisMonth} from last month</p>
+          {/* <p className="text-xs text-muted-foreground">+{stats.newCoursesThisMonth} from last month</p> */}
         </CardContent>
       </Card>
       <Card>
@@ -83,7 +83,7 @@ export function DashboardStats() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.totalAudioFiles}</div>
-          <p className="text-xs text-muted-foreground">+{stats.newAudioFilesThisMonth} from last month</p>
+          {/* <p className="text-xs text-muted-foreground">+{stats.newAudioFilesThisMonth} from last month</p> */}
         </CardContent>
       </Card>
       <Card>
@@ -93,7 +93,7 @@ export function DashboardStats() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.totalAdmins}</div>
-          <p className="text-xs text-muted-foreground">+{stats.newAdminsThisMonth} from last month</p>
+          {/* <p className="text-xs text-muted-foreground">+{stats.newAdminsThisMonth} from last month</p> */}
         </CardContent>
       </Card>
     </div>

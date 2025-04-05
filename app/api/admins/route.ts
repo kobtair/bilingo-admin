@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { connectToDatabase, type Admin } from "@/lib/mongodb"
 import { v4 as uuidv4 } from "uuid"
+import bcrypt from "bcrypt" 
 
 export async function GET() {
   try {
@@ -18,21 +19,19 @@ export async function POST(request: Request) {
   try {
     const { db } = await connectToDatabase()
     const data = await request.json()
+    const hashedPassword = await bcrypt.hash(data.password, 10)
 
-    // Create new admin object
     const admin: Admin = {
       id: uuidv4(),
       name: data.name,
       email: data.email,
-      password: data.password, // In a real app, you would hash this password
+      password: hashedPassword, 
       role: data.role,
       createdAt: new Date().toISOString().split("T")[0],
     }
 
-    // Insert into database
     await db.collection("admins").insertOne(admin)
 
-    // Remove password from response
     const { password, ...adminWithoutPassword } = admin
 
     return NextResponse.json(adminWithoutPassword, { status: 201 })

@@ -1,12 +1,5 @@
-/**
- * API client for interacting with the backend
- */
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
-/**
- * Generic fetch function with error handling
- */
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
