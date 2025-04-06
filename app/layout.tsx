@@ -8,7 +8,6 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata = {
   title: "BILINGO Admin",
   description: "Admin panel for BILINGO language learning platform",
-    generator: 'v0.dev'
 }
 
 export default function RootLayout({

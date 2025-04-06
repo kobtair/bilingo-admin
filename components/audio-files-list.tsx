@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { audioFilesAPI } from "@/lib/api"
+import { supabase } from "@/lib/supabaseClient"
 
 interface AudioFile {
   id: string
@@ -101,19 +102,54 @@ export function AudioFilesList() {
     try {
       setIsUploading(true)
 
-      // Create form data for file upload
-      const formData = new FormData()
-      formData.append("title", newAudio.title)
-      formData.append("language", newAudio.language)
-      formData.append("dialect", newAudio.dialect)
-      formData.append("phraseSaid", newAudio.phraseSaid)
-      formData.append("file", newAudio.file)
+      // Upload the file to Supabase Storage
+      const file = newAudio.file
+      const filePath = `audio/${Date.now()}_${file.name}`
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('audio')
+        .upload(filePath, file)
+      if (uploadError) {
+        throw uploadError
+      }
+      const { data } = supabase
+        .storage
+        .from('audio')
+        .getPublicUrl(filePath)
+      if (!data.publicUrl) {
+        throw new Error("Failed to get public URL")
+      }
 
-      // Upload to API
-      const data = await audioFilesAPI.create(formData)
+      // Create new audio file metadata as FormData
+      const formData = new FormData();
+      formData.append("id", Date.now().toString());
+      formData.append("title", newAudio.title);
+      formData.append("language", newAudio.language);
+      formData.append("dialect", newAudio.dialect);
+      formData.append("phraseSaid", newAudio.phraseSaid);
+      formData.append("fileName", file.name);
+      formData.append("fileUrl", data.publicUrl);
+      formData.append("duration", "N/A");
+      formData.append("uploadDate", new Date().toLocaleDateString());
+
+      // Insert the new audio file record into the database.
+      await audioFilesAPI.create(formData)
+
+      // Create a new audio file record from the form data
+      const newAudioFile: AudioFile = {
+        id: Date.now().toString(),
+        title: newAudio.title,
+        language: newAudio.language,
+        dialect: newAudio.dialect,
+        phraseSaid: newAudio.phraseSaid,
+        fileName: file.name,
+        fileUrl: data.publicUrl,
+        duration: "N/A",
+        uploadDate: new Date().toLocaleDateString(),
+      }
 
       // Update local state
-      setAudioFiles([...audioFiles, data])
+      setAudioFiles([...audioFiles, newAudioFile])
 
       // Reset form
       setNewAudio({
@@ -123,11 +159,9 @@ export function AudioFilesList() {
         phraseSaid: "",
         file: null,
       })
-
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
-
       setIsDialogOpen(false)
 
       toast({
@@ -254,7 +288,7 @@ export function AudioFilesList() {
                 <TableHead>Title</TableHead>
                 <TableHead>Language</TableHead>
                 <TableHead>Phrase</TableHead>
-                <TableHead>Duration</TableHead>
+                {/* <TableHead>Duration</TableHead> */}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -284,10 +318,10 @@ export function AudioFilesList() {
                         {audio.phraseSaid}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       {audio.duration}
                       <div className="text-xs text-muted-foreground">Uploaded: {audio.uploadDate}</div>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button

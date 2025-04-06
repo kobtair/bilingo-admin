@@ -48,6 +48,8 @@ export function CoursesList() {
   const [courses, setCourses] = useState<Course[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
 
   const [newCourse, setNewCourse] = useState({
     title: "",
@@ -98,6 +100,32 @@ export function CoursesList() {
       toast({
         title: "Error",
         description: "Failed to create course. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEditCourse = async () => {
+    if (!selectedCourse) return
+    try {
+      const updatedCourse = await coursesAPI.update(selectedCourse.id, selectedCourse)
+      setCourses((prevCourses) =>
+        prevCourses.map((course) =>
+          course.id === updatedCourse.id ? { ...course, ...updatedCourse } : course
+        )
+      )
+      setIsEditDialogOpen(false)
+      setSelectedCourse(null)
+
+      toast({
+        title: "Success",
+        description: "Course updated successfully",
+      })
+    } catch (error) {
+      console.error("Error updating course:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update course. Please try again.",
         variant: "destructive",
       })
     }
@@ -234,10 +262,11 @@ export function CoursesList() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link href={`/dashboard/courses/${course.id}/edit`}>
-                            <Edit className="h-4 w-4" />
-                          </Link>
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          setSelectedCourse(course)
+                          setIsEditDialogOpen(true)
+                        }}>
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -272,6 +301,59 @@ export function CoursesList() {
           </Table>
         )}
       </CardContent>
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Course</DialogTitle>
+            <DialogDescription>Update the details of the course.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                value={selectedCourse?.title || ""}
+                onChange={(e) =>
+                  setSelectedCourse((prev) => prev && { ...prev, title: e.target.value })
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={selectedCourse?.description || ""}
+                onChange={(e) =>
+                  setSelectedCourse((prev) => prev && { ...prev, description: e.target.value })
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-language">Language</Label>
+              <Input
+                id="edit-language"
+                value={selectedCourse?.language || ""}
+                onChange={(e) =>
+                  setSelectedCourse((prev) => prev && { ...prev, language: e.target.value })
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-dialect">Dialect</Label>
+              <Input
+                id="edit-dialect"
+                value={selectedCourse?.dialect || ""}
+                onChange={(e) =>
+                  setSelectedCourse((prev) => prev && { ...prev, dialect: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleEditCourse}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

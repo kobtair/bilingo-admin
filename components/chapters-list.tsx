@@ -18,8 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { FileAudio, FilePlus, Edit, Trash2, Loader2, MoveUp, MoveDown } from "lucide-react"
+import { FilePlus, Edit, Trash2, Loader2, MoveUp, MoveDown } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,18 +31,20 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { chaptersAPI } from "@/lib/api"
-import { uploadFile } from "@/lib/cloudflare"
+import { chaptersAPI, audioFilesAPI } from "@/lib/api"
 
 interface Chapter {
+  _id: string
   id: string
   courseId: string
-  name: string
+  title: string
   description: string
   content: string
   audioFile: string | null
+  audio_id: string | null
   order: number
-  status: "Complete" | "In Progress" | "Pending"
+  
+  // status: "Complete" | "In Progress" | "Pending"
 }
 
 interface ChaptersListProps {
@@ -56,13 +57,14 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [audioFile, setAudioFile] = useState<File | null>(null)
 
   const [newChapter, setNewChapter] = useState({
-    name: "",
+    title: "",
     description: "",
     content: "",
+    audioId: "",
   })
+  const [audioFiles, setAudioFiles] = useState<{ _id: string; url: string; title?: string }[]>([])
 
   const fetchChapters = async () => {
     try {
@@ -81,31 +83,29 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
     }
   }
 
-  useEffect(() => {
-    fetchChapters()
-  }, [courseId])
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setAudioFile(e.target.files[0])
+  const fetchAudioFiles = async () => {
+    try {
+      const data = await audioFilesAPI.getAll()
+      setAudioFiles(data)
+    } catch (error) {
+      console.error("Error fetching audio files:", error)
     }
   }
+
+  useEffect(() => {
+    fetchChapters()
+    fetchAudioFiles()
+  }, [courseId])
 
   const handleAddChapter = async () => {
     try {
       setIsUploading(true)
 
-      // Upload audio file if provided
-      let audioFileUrl = null
-      if (audioFile) {
-        const filePath = `courses/${courseId}/chapters/${Date.now()}_${audioFile.name}`
-        audioFileUrl = await uploadFile(audioFile, filePath)
-      }
-
       // Create chapter data
       const chapterData = {
         ...newChapter,
-        audioFile: audioFileUrl,
+        audio_id: newChapter.audioId || null,
+        order: chapters.length + 1,
       }
 
       // Send to API
@@ -116,11 +116,11 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
 
       // Reset form
       setNewChapter({
-        name: "",
+        title: "",
         description: "",
         content: "",
+        audioId: "",
       })
-      setAudioFile(null)
       setIsDialogOpen(false)
 
       toast({
@@ -160,48 +160,49 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
 
   const handleReorderChapter = async (id: string, direction: "up" | "down") => {
     try {
-      // Find the chapter to move
-      const chapterIndex = chapters.findIndex((chapter) => chapter.id === id)
-      if (chapterIndex === -1) return
+      // Sort chapters by order
+      const sortedChapters = [...chapters].sort((a, b) => a.order - b.order);
+      const chapterIndex = sortedChapters.findIndex((chapter) => chapter._id === id); // changed comparison to _id
+      if (chapterIndex === -1) return;
 
       // Check if we can move in the requested direction
-      if (direction === "up" && chapterIndex === 0) return
-      if (direction === "down" && chapterIndex === chapters.length - 1) return
+      if (direction === "up" && chapterIndex === 0) return;
+      if (direction === "down" && chapterIndex === sortedChapters.length - 1) return;
 
-      // Create a copy of the chapters array
-      const newChapters = [...chapters]
+      // Create a copy of the sorted chapters array
+      const newChapters = [...sortedChapters];
 
       // Swap the chapters
-      const targetIndex = direction === "up" ? chapterIndex - 1 : chapterIndex + 1
-      const temp = newChapters[targetIndex]
-      newChapters[targetIndex] = newChapters[chapterIndex]
-      newChapters[chapterIndex] = temp
+      const targetIndex = direction === "up" ? chapterIndex - 1 : chapterIndex + 1;
+      const temp = newChapters[targetIndex];
+      newChapters[targetIndex] = newChapters[chapterIndex];
+      newChapters[chapterIndex] = temp;
 
       // Update the order property
       newChapters.forEach((chapter, index) => {
-        chapter.order = index + 1
-      })
+        chapter.order = index + 1;
+      });
 
       // Update the UI immediately
-      setChapters(newChapters)
+      setChapters(newChapters);
 
       // Send the new order to the API
-      const chapterIds = newChapters.map((chapter) => chapter.id)
-      await chaptersAPI.reorder(courseId, chapterIds)
+      const chapterIds = newChapters.map((chapter) => chapter._id);
+      await chaptersAPI.reorder(courseId, chapterIds);
 
       toast({
         title: "Success",
         description: "Chapter order updated",
-      })
+      });
     } catch (error) {
-      console.error("Error reordering chapters:", error)
+      console.error("Error reordering chapters:", error);
       toast({
         title: "Error",
         description: "Failed to reorder chapters. Please try again.",
         variant: "destructive",
-      })
+      });
       // Revert to original order by refetching
-      fetchChapters()
+      fetchChapters();
     }
   }
 
@@ -229,8 +230,8 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                 <Label htmlFor="name">Chapter Name</Label>
                 <Input
                   id="name"
-                  value={newChapter.name}
-                  onChange={(e) => setNewChapter({ ...newChapter, name: e.target.value })}
+                  value={newChapter.title}
+                  onChange={(e) => setNewChapter({ ...newChapter, title: e.target.value })}
                 />
               </div>
               <div className="grid gap-2">
@@ -251,8 +252,20 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="audio">Audio File (Optional)</Label>
-                <Input id="audio" type="file" accept="audio/*" onChange={handleFileChange} />
+                <Label htmlFor="audioUrl">Select Audio (Optional)</Label>
+                <select
+                  id="audioUrl"
+                  value={newChapter.audioId}
+                  onChange={(e) => setNewChapter({ ...newChapter, audioId: e.target.value })}
+                  className="border rounded p-2"
+                >
+                  <option value="">None</option>
+                  {audioFiles.map((audio) => (
+                    <option key={audio._id} value={audio._id}>
+                      {audio.title || audio.url}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <DialogFooter>
@@ -282,7 +295,7 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                 <TableHead>Order</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Audio</TableHead>
-                <TableHead>Status</TableHead>
+                {/* <TableHead>Status</TableHead> */}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -298,20 +311,19 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                   <TableRow key={chapter.id}>
                     <TableCell>{chapter.order}</TableCell>
                     <TableCell className="font-medium">
-                      {chapter.name}
+                      {chapter.title}
                       <div className="text-xs text-muted-foreground">{chapter.description}</div>
                     </TableCell>
                     <TableCell>
-                      {chapter.audioFile ? (
+                      {chapter.audio_id ? (
                         <div className="flex items-center">
-                          <FileAudio className="mr-2 h-4 w-4 text-blue-600" />
                           <span className="text-sm">Audio available</span>
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">No audio</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       <Badge
                         className={
                           chapter.status === "Complete"
@@ -323,13 +335,13 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                       >
                         {chapter.status}
                       </Badge>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleReorderChapter(chapter.id, "up")}
+                          onClick={() => handleReorderChapter(chapter._id, "up")} // changed from chapter.id to chapter._id
                           disabled={chapter.order === 1}
                         >
                           <MoveUp className="h-4 w-4" />
@@ -337,7 +349,7 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleReorderChapter(chapter.id, "down")}
+                          onClick={() => handleReorderChapter(chapter._id, "down")} // changed from chapter.id to chapter._id
                           disabled={chapter.order === chapters.length}
                         >
                           <MoveDown className="h-4 w-4" />
@@ -357,13 +369,13 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will permanently delete the chapter "{chapter.name}".
+                                This will permanently delete the chapter "{chapter.title}".
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleDeleteChapter(chapter.id)}
+                                onClick={() => handleDeleteChapter(chapter._id)}
                                 className="bg-red-500 hover:bg-red-700"
                               >
                                 Delete

@@ -73,7 +73,7 @@ export const coursesAPI = {
     }),
   update: (id: string, data: any) =>
     fetchAPI<any>(`/courses/${id}`, {
-      method: "PATCH",
+      method: "PUT",
       body: JSON.stringify(data),
     }),
   delete: (id: string) =>

@@ -41,3 +41,28 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   }
 }
 
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  try {
+    const { db } = await connectToDatabase()
+    const body = await request.json()
+
+    // Check if course exists
+    const course = await db.collection("courses").findOne({ id: params.id })
+    if (!course) {
+      return NextResponse.json({ error: "Course not found" }, { status: 404 })
+    }
+
+    // Update course
+    const updatedCourse = {
+      ...course,
+      ...body, // Merge existing course data with the new data
+    }
+    await db.collection("courses").updateOne({ id: params.id }, { $set: updatedCourse })
+
+    return NextResponse.json(updatedCourse)
+  } catch (error) {
+    console.error("Error updating course:", error)
+    return NextResponse.json({ error: "Failed to update course" }, { status: 500 })
+  }
+}
+

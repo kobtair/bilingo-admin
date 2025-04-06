@@ -41,20 +41,20 @@ export function DashboardNav() {
       icon: <Headphones className="mr-2 h-4 w-4" />,
       active: pathname === "/dashboard/audio",
     },
-    {
-      href: "/dashboard/settings",
-      label: "Settings",
-      icon: <Settings className="mr-2 h-4 w-4" />,
-      active: pathname === "/dashboard/settings",
-    },
+    // {
+    //   href: "/dashboard/settings",
+    //   label: "Settings",
+    //   icon: <Settings className="mr-2 h-4 w-4" />,
+    //   active: pathname === "/dashboard/settings",
+    // },
   ]
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-4 py-4">
+      {/* <div className="flex items-center gap-2 px-4 py-4">
         <Image src="/logo.png" width={40} height={40} alt="BILINGO Logo" />
         <span className="font-bold text-xl text-blue-700 dark:text-blue-400">BILINGO</span>
-      </div>
+      </div> */}
       <nav className="grid items-start px-2 py-4">
         {routes.map((route) => (
           <Button

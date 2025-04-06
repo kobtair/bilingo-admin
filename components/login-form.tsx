@@ -24,15 +24,25 @@ export function LoginForm() {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+    try {
+      const response = await fetch("/api/admins/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    // This is a mock authentication - in a real app, you would validate against a backend
-    if (email === "admin@bilingo.com" && password === "password") {
-      // Simulate API call delay
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 1000)
-    } else {
+      if (!response.ok) {
+        throw new Error("Invalid credentials")
+      }
+
+      const data = await response.json()
+      localStorage.setItem("token", data.token)
+      router.push("/dashboard")
+    } catch (err) {
       setError("Invalid email or password")
+    } finally {
       setIsLoading(false)
     }
   }

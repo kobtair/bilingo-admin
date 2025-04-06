@@ -1,23 +1,32 @@
 "use client"
-
 import { useParams } from "next/navigation"
+import { useState, useEffect } from "react"
 import { ChaptersList } from "@/components/chapters-list"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader } from "lucide-react"
 import Link from "next/link"
+import { coursesAPI } from "@/lib/api"
 
 export default function CourseDetailsPage() {
   const params = useParams()
   const courseId = params.courseId as string
+  const [course, setCourse] = useState<any>(null)
 
-  // In a real app, you would fetch the course details based on the courseId
-  const course = {
-    id: courseId,
-    title: "Spanish for Beginners",
-    description: "Learn basic Spanish phrases and vocabulary",
-    language: "Spanish",
-    dialect: "Latin American",
+  useEffect(() => {
+    if (courseId) {
+      coursesAPI.getById(courseId)
+        .then(data => setCourse(data))
+        .catch(err => console.error(err))
+    }
+  }, [courseId])
+
+  if (!course) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader className="w-8 h-8 animate-spin" />
+      </div>
+    )
   }
 
   return (
