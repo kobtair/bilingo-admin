@@ -105,10 +105,6 @@ export function UsersList() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button className="bg-gradient-to-r from-blue-700 to-cyan-500 hover:from-blue-800 hover:to-cyan-600 dark:from-blue-600 dark:to-cyan-400 dark:hover:from-blue-700 dark:hover:to-cyan-500">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
         </div>
       </CardHeader>
       <CardContent>
