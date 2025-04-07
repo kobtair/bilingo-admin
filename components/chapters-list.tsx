@@ -17,8 +17,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { FilePlus, Edit, Trash2, Loader2, MoveUp, MoveDown } from "lucide-react"
+import { FilePlus, Edit, Trash2, Loader2, MoveUp, MoveDown, Eye } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +31,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { chaptersAPI, audioFilesAPI } from "@/lib/api"
+import ReactMde from "react-mde"
+import ReactMarkdown from "react-markdown"
+import "react-mde/lib/styles/css/react-mde-all.css"
 
 interface Chapter {
   _id: string
@@ -43,8 +45,6 @@ interface Chapter {
   audioFile: string | null
   audio_id: string | null
   order: number
-  
-  // status: "Complete" | "In Progress" | "Pending"
 }
 
 interface ChaptersListProps {
@@ -65,6 +65,7 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
     audioId: "",
   })
   const [audioFiles, setAudioFiles] = useState<{ _id: string; url: string; title?: string }[]>([])
+  const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write")
 
   const fetchChapters = async () => {
     try {
@@ -161,48 +162,48 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
   const handleReorderChapter = async (id: string, direction: "up" | "down") => {
     try {
       // Sort chapters by order
-      const sortedChapters = [...chapters].sort((a, b) => a.order - b.order);
-      const chapterIndex = sortedChapters.findIndex((chapter) => chapter._id === id); // changed comparison to _id
-      if (chapterIndex === -1) return;
+      const sortedChapters = [...chapters].sort((a, b) => a.order - b.order)
+      const chapterIndex = sortedChapters.findIndex((chapter) => chapter._id === id)
+      if (chapterIndex === -1) return
 
       // Check if we can move in the requested direction
-      if (direction === "up" && chapterIndex === 0) return;
-      if (direction === "down" && chapterIndex === sortedChapters.length - 1) return;
+      if (direction === "up" && chapterIndex === 0) return
+      if (direction === "down" && chapterIndex === sortedChapters.length - 1) return
 
       // Create a copy of the sorted chapters array
-      const newChapters = [...sortedChapters];
+      const newChapters = [...sortedChapters]
 
       // Swap the chapters
-      const targetIndex = direction === "up" ? chapterIndex - 1 : chapterIndex + 1;
-      const temp = newChapters[targetIndex];
-      newChapters[targetIndex] = newChapters[chapterIndex];
-      newChapters[chapterIndex] = temp;
+      const targetIndex = direction === "up" ? chapterIndex - 1 : chapterIndex + 1
+      const temp = newChapters[targetIndex]
+      newChapters[targetIndex] = newChapters[chapterIndex]
+      newChapters[chapterIndex] = temp
 
       // Update the order property
       newChapters.forEach((chapter, index) => {
-        chapter.order = index + 1;
-      });
+        chapter.order = index + 1
+      })
 
       // Update the UI immediately
-      setChapters(newChapters);
+      setChapters(newChapters)
 
       // Send the new order to the API
-      const chapterIds = newChapters.map((chapter) => chapter._id);
-      await chaptersAPI.reorder(courseId, chapterIds);
+      const chapterIds = newChapters.map((chapter) => chapter._id)
+      await chaptersAPI.reorder(courseId, chapterIds)
 
       toast({
         title: "Success",
         description: "Chapter order updated",
-      });
+      })
     } catch (error) {
-      console.error("Error reordering chapters:", error);
+      console.error("Error reordering chapters:", error)
       toast({
         title: "Error",
         description: "Failed to reorder chapters. Please try again.",
         variant: "destructive",
-      });
+      })
       // Revert to original order by refetching
-      fetchChapters();
+      fetchChapters()
     }
   }
 
@@ -220,7 +221,7 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
               Add Chapter
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl overflow-y-auto max-h-[80vh]">
             <DialogHeader>
               <DialogTitle>Add New Chapter</DialogTitle>
               <DialogDescription>Create a new chapter with content and audio.</DialogDescription>
@@ -242,13 +243,16 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                   onChange={(e) => setNewChapter({ ...newChapter, description: e.target.value })}
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="prose grid gap-2">
                 <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  rows={8}
+                <ReactMde
                   value={newChapter.content}
-                  onChange={(e) => setNewChapter({ ...newChapter, content: e.target.value })}
+                  onChange={(value) => setNewChapter({ ...newChapter, content: value })}
+                  selectedTab={selectedTab}
+                  onTabChange={setSelectedTab}
+                  generateMarkdownPreview={(markdown) =>
+                    Promise.resolve(<ReactMarkdown>{markdown}</ReactMarkdown>)
+                  }
                 />
               </div>
               <div className="grid gap-2">
@@ -295,7 +299,6 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                 <TableHead>Order</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Audio</TableHead>
-                {/* <TableHead>Status</TableHead> */}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -323,25 +326,33 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                         <span className="text-sm text-muted-foreground">No audio</span>
                       )}
                     </TableCell>
-                    {/* <TableCell>
-                      <Badge
-                        className={
-                          chapter.status === "Complete"
-                            ? "bg-green-600"
-                            : chapter.status === "In Progress"
-                              ? "bg-amber-500"
-                              : "bg-gray-500"
-                        }
-                      >
-                        {chapter.status}
-                      </Badge>
-                    </TableCell> */}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="hover:text-blue-500">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="overflow-y-auto max-h-[80vh]">
+                            <DialogHeader>
+                              <DialogTitle>Chapter Details</DialogTitle>
+                            </DialogHeader>
+                            <div className="py-4">
+                              <div><strong>Title:</strong> {chapter.title}</div>
+                              <div className="mt-2"><strong>Description:</strong> {chapter.description}</div>
+                              <div className="prose mt-2">
+                                <strong>Content:</strong>
+                                <ReactMarkdown>{chapter.content}</ReactMarkdown>
+                              </div>
+                              <div className="mt-2"><strong>Audio:</strong> {chapter.audio_id ? "Audio available" : "No audio"}</div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleReorderChapter(chapter._id, "up")} // changed from chapter.id to chapter._id
+                          onClick={() => handleReorderChapter(chapter._id, "up")}
                           disabled={chapter.order === 1}
                         >
                           <MoveUp className="h-4 w-4" />
@@ -349,15 +360,10 @@ export function ChaptersList({ courseId }: ChaptersListProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleReorderChapter(chapter._id, "down")} // changed from chapter.id to chapter._id
+                          onClick={() => handleReorderChapter(chapter._id, "down")}
                           disabled={chapter.order === chapters.length}
                         >
                           <MoveDown className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" asChild>
-                          <a href={`/dashboard/courses/${courseId}/chapters/${chapter.id}`}>
-                            <Edit className="h-4 w-4" />
-                          </a>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

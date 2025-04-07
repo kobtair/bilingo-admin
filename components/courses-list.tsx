@@ -41,6 +41,7 @@ interface Course {
   dialect: string
   chaptersCount: number
   status: "Published" | "Draft" | "Archived"
+  chapters: any[]
 }
 
 export function CoursesList() {
@@ -221,7 +222,7 @@ export function CoursesList() {
                 <TableHead>Title</TableHead>
                 <TableHead>Language</TableHead>
                 <TableHead>Chapters</TableHead>
-                <TableHead>Status</TableHead>
+                {/* <TableHead>Status</TableHead> */}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -246,8 +247,8 @@ export function CoursesList() {
                       {course.language}
                       <div className="text-xs text-muted-foreground">{course.dialect}</div>
                     </TableCell>
-                    <TableCell>{course.chaptersCount}</TableCell>
-                    <TableCell>
+                    <TableCell>{course.chapters.length}</TableCell>
+                    {/* <TableCell>
                       <Badge
                         className={
                           course.status === "Published"
@@ -259,7 +260,7 @@ export function CoursesList() {
                       >
                         {course.status}
                       </Badge>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => {
