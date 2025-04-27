@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { FileAudio, Upload, Play, Trash2, Loader2 } from "lucide-react"
+import { FileAudio, Upload, Play, Trash2, Loader2, StopCircle } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +53,7 @@ export function AudioFilesList() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
 
   const [newAudio, setNewAudio] = useState({
     title: "",
@@ -200,8 +201,22 @@ export function AudioFilesList() {
   }
 
   const playAudio = (url: string) => {
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+    }
     const audio = new Audio(url)
     audio.play()
+    setCurrentAudio(audio)
+    audio.onended = () => setCurrentAudio(null) // Reset currentAudio when playback ends
+  }
+
+  const stopAudio = () => {
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+      setCurrentAudio(null)
+    }
   }
 
   return (
@@ -324,14 +339,25 @@ export function AudioFilesList() {
                     </TableCell> */}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-blue-600 hover:text-blue-800"
-                          onClick={() => playAudio(audio.fileUrl)}
-                        >
-                          <Play className="h-4 w-4" />
-                        </Button>
+                        {currentAudio && currentAudio.src === audio.fileUrl && !currentAudio.paused ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-blue-600 hover:text-blue-800"
+                            onClick={stopAudio}
+                          >
+                            <StopCircle className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-blue-600 hover:text-blue-800"
+                            onClick={() => playAudio(audio.fileUrl)}
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                        )}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700">
